@@ -83,7 +83,7 @@
     <option value="porta">11. Porta</option>
     <option value="beaufort">12. Beaufort</option>
     <option value="vernam">13. Vernam (binaire)</option>
-    <option value="antikey">14. Anti-Key</option>
+   
   </select><br>
 
   <textarea id="inputText" rows="4" placeholder="Entrez le texte ici..."></textarea><br>
@@ -244,7 +244,7 @@ function process(decrypt) {
       case "porta": output = porta(text, key); break;
       case "beaufort": output = beaufort(text, key); break;
       case "vernam": output = vernam(text, key); break;
-      case "antikey": output = antikey(text, key); break;
+      
       default: output = "Algorithme inconnu.";
     }
   } catch (e) {
