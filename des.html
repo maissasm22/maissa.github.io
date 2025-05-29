@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Algorithme DES</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header, footer {
+      background: #34495e;
+      color: white;
+      text-align: center;
+      padding: 1em;
+    }
+
+    main {
+      flex: 1;
+      padding: 2em;
+      text-align: center;
+    }
+
+    textarea, input {
+      width: 80%;
+      max-width: 500px;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 1em;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #2980b9;
+      color: white;
+    }
+
+    button:hover {
+      background-color: #1abc9c;
+    }
+
+    #output {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #2c3e50;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  Algorithme DES (16 tours)
+</header>
+
+<main>
+  <p>
+    Entrez un texte et une clé (8 caractères = 64 bits) pour chiffrer/déchiffrer avec l’algorithme DES (16 tours simulé).
+  </p>
+
+  <textarea id="inputText" rows="4" placeholder="Entrez le texte ici..."></textarea><br>
+  <input type="text" id="keyInput" placeholder="Clé (8 caractères)" maxlength="8"/><br>
+
+  <button onclick="encryptDES()">Chiffrer</button>
+  <button onclick="decryptDES()">Déchiffrer</button>
+
+  <div id="output"></div>
+
+  <button onclick="window.location.href='index.html'" style="margin-top: 30px;">⬅ Retour à l'accueil</button>
+</main>
+
+<footer>
+    Réalisé par Souames Maissa – Master 1 RSD – Université 20 Août Skikda – 2024/2025
+</footer>
+
+<script>
+function xor(a, b) {
+  let result = '';
+  for (let i = 0; i < a.length; i++) {
+    result += a[i] === b[i] ? '0' : '1';
+  }
+  return result;
+}
+
+function stringToBin(str) {
+  return str.split('').map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join('');
+}
+
+function binToString(bin) {
+  let result = '';
+  for (let i = 0; i < bin.length; i += 8) {
+    result += String.fromCharCode(parseInt(bin.slice(i, i + 8), 2));
+  }
+  return result;
+}
+
+function permute(bits) {
+  // Simplified fake permutation (just reverse for demo)
+  return bits.split('').reverse().join('');
+}
+
+function f(right, subkey) {
+  let expanded = right.padEnd(64, '0'); // simple expansion
+  let xored = xor(expanded, subkey);
+  return permute(xored).slice(0, 32);
+}
+
+function generateSubKeys(key64) {
+  let subkeys = [];
+  for (let i = 0; i < 16; i++) {
+    subkeys.push(permute(key64.slice(i) + key64.slice(0, i))); // rotation
+  }
+  return subkeys;
+}
+
+function desEncryptBlock(block64, key64) {
+  let L = block64.slice(0, 32);
+  let R = block64.slice(32);
+  const subkeys = generateSubKeys(key64);
+
+  for (let i = 0; i < 16; i++) {
+    let temp = R;
+    R = xor(L, f(R, subkeys[i]));
+    L = temp;
+  }
+
+  return R + L;
+}
+
+function desDecryptBlock(block64, key64) {
+  let L = block64.slice(0, 32);
+  let R = block64.slice(32);
+  const subkeys = generateSubKeys(key64).reverse();
+
+  for (let i = 0; i < 16; i++) {
+    let temp = R;
+    R = xor(L, f(R, subkeys[i]));
+    L = temp;
+  }
+
+  return R + L;
+}
+
+function padTo64Bits(bin) {
+  while (bin.length % 64 !== 0) {
+    bin += '0';
+  }
+  return bin;
+}
+
+function encryptDES() {
+  const text = document.getElementById("inputText").value;
+  const key = document.getElementById("keyInput").value;
+
+  if (key.length !== 8) {
+    alert("La clé doit contenir exactement 8 caractères (64 bits).");
+    return;
+  }
+
+  const binText = padTo64Bits(stringToBin(text));
+  const binKey = stringToBin(key);
+
+  let encrypted = '';
+  for (let i = 0; i < binText.length; i += 64) {
+    const block = binText.slice(i, i + 64);
+    encrypted += desEncryptBlock(block, binKey);
+  }
+
+  document.getElementById("output").innerText = "Texte chiffré (binaire) :\n" + encrypted;
+}
+
+function decryptDES() {
+  const text = document.getElementById("inputText").value;
+  const key = document.getElementById("keyInput").value;
+
+  if (key.length !== 8) {
+    alert("La clé doit contenir exactement 8 caractères (64 bits).");
+    return;
+  }
+
+  if (!/^[01]+$/.test(text) || text.length % 64 !== 0) {
+    alert("Le texte à déchiffrer doit être en binaire et multiple de 64 bits.");
+    return;
+  }
+
+  const binKey = stringToBin(key);
+
+  let decrypted = '';
+
+  for (let i = 0; i < text.length; i += 64) {
+    const block = text.slice(i, i + 64);
+    decrypted += desDecryptBlock(block, binKey);
+  }
+
+  document.getElementById("output").innerText = "Texte déchiffré :\n" + binToString(decrypted);
+}
+</script>
+
+</body>
+</html>
